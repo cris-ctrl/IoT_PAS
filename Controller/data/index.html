@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ESP Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js"></script> 
+</head>
+<body>
+  <h2>ESP Controller</h2>
+  <div>
+    <div id="circle2C" class="circle"></div>
+    <label>
+      <input type="checkbox" onchange="toggle('2C', this.checked)"> 2C LED
+    </label>
+    <span id="status2C" class="status"></span>
+  </div>
+  <div>
+    <div id="circleA4" class="circle"></div>
+    <label>
+      <input type="checkbox" onchange="toggle('A4', this.checked)"> A4 LED
+    </label>
+    <span id="statusA4" class="status"></span>
+  </div>
+</body>
+</html>
