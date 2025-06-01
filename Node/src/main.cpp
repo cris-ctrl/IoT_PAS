@@ -38,7 +38,7 @@ void sendAck() {
   AckPacket ack;
   strncpy(ack.name, selfName, 3);
   ack.name[3] = '\0';
-  esp_now_send(controllerMAC, (uint_t *)&ack, sizeof(ack));
+  esp_now_send(controllerMAC, (uint8_t *)&ack, sizeof(ack));  // Fixed uint_t to uint8_t
 }
 
 void sendSensorData() {
