@@ -95,6 +95,7 @@ void setup() {
 }
 
 void loop() {
+  Serial.println("hey fucker cmon work");
   Serial.println(dht.readHumidity());
   Serial.println(dht.readTemperature());
 
