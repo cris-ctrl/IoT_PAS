@@ -29,11 +29,7 @@ void setup() {
   Serial.begin(9800);
   dht.begin();
   WiFi.mode(WIFI_STA);  // ESP-NOW works only in STA or AP mode
-
-  if (esp_now_init() != 0) { //initializes esp-now while testing if it actually worked
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
+  esp_now_init(); // do i really need to explain this to you? dumbass
 
   esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER); //controller only sends, slave only recieves, combo cant decide if hes a top or bottom (its both)
   esp_now_add_peer(mac09, ESP_NOW_ROLE_SLAVE, 1, NULL, 0); // adds esp09 as a slave peer, sending on channel 1 of 13, without encription
