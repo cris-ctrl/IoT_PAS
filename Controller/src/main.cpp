@@ -22,9 +22,20 @@ struct AckPacket {
   char name[4];
 };
 
+struct SensorPacket {
+  char name[4];
+  float temperature;
+  float humidity;
+};
+
 // Last received ACK timestamps
 unsigned long lastA4Ack = 0;
 unsigned long last2CAck = 0;
+
+// Sensor data
+float temp2C = 0.0;
+float hum2C = 0.0;
+unsigned long lastSensor2C = 0;
 
 // Debug print function for MAC addresses
 void printMac(const char* label, const uint8_t* mac) {
@@ -53,6 +64,17 @@ void onReceive(uint8_t *mac, uint8_t *data, uint8_t len) {
     if (strcmp(ack->name, "A4") == 0) lastA4Ack = millis();
     else if (strcmp(ack->name, "2C") == 0) last2CAck = millis();
   }
+  else if (len == sizeof(SensorPacket)) {
+    SensorPacket* sensor = (SensorPacket*)data;
+    Serial.printf("[SENSOR] From: %s, Temp: %.1fC, Hum: %.1f%%\n", 
+                  sensor->name, sensor->temperature, sensor->humidity);
+    
+    if (strcmp(sensor->name, "2C") == 0) {
+      temp2C = sensor->temperature;
+      hum2C = sensor->humidity;
+      lastSensor2C = millis();
+    }
+  }
 }
 
 void handleClient(WiFiClient client) {
@@ -80,6 +102,13 @@ void handleClient(WiFiClient client) {
                  millis() - lastA4Ack, millis() - last2CAck);
     return;
   }
+  else if (request.indexOf("/sensor") >= 0) {
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connection: close\r\n");
+    client.printf("{\"temp\":%.1f,\"hum\":%.1f}", temp2C, hum2C);
+    return;
+  }
 
   // Serve the HTML file from SPIFFS
   File file = SPIFFS.open("/index.html", "r");
@@ -87,7 +116,7 @@ void handleClient(WiFiClient client) {
     client.println("HTTP/1.1 500 Internal Server Error");
     client.println("Content-Type: text/plain");
     client.println("Connection: close\r\n");
-    client.println("500 - File fucking gone");
+    client.println("500 - File not found");
     return; 
   }
 
@@ -167,8 +196,8 @@ void loop() {
   
   // Periodic status updates
   if (millis() - lastStatus > 5000) {
-    Serial.printf("[STATUS] A4: %lums ago | 2C: %lums ago\n", 
-                 millis() - lastA4Ack, millis() - last2CAck);
+    Serial.printf("[STATUS] A4: %lums ago | 2C: %lums ago | Temp: %.1fC | Hum: %.1f%%\n", 
+                 millis() - lastA4Ack, millis() - last2CAck, temp2C, hum2C);
     lastStatus = millis();
   }
   
