@@ -5,7 +5,8 @@
 
 // Peer MAC addresses
 uint8_t macA4[] = {0xA4, 0xE5, 0x7C, 0xBB, 0xE9, 0xFC};
-uint8_t mac2C[] = {0x2C, 0xF4, 0x32, 0x8C, 0x0D, 0x13};
+uint8_t mac2C[] = {0x2C, 0xF4, 0x32, 0x8C, 0x09, 0xBF};  // Corrected to match node's controller MAC
+
 // network config
 char NN[] = "Fiodor";
 char PW[] = "dotoievski";
@@ -54,6 +55,12 @@ void sendToggle(String target, bool state) {
 }
 
 void onReceive(uint8_t *mac, uint8_t *data, uint8_t len) {
+  // Prevent buffer overflow
+  if (len > 50) {
+    Serial.println("[ERROR] Packet too large, ignoring");
+    return;
+  }
+  
   Serial.printf("\n[RECV] MAC: %02X:%02X:%02X:%02X:%02X:%02X | Len: %d\n", 
                 mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], len);
   
@@ -66,8 +73,15 @@ void onReceive(uint8_t *mac, uint8_t *data, uint8_t len) {
   }
   else if (len == sizeof(SensorPacket)) {
     SensorPacket* sensor = (SensorPacket*)data;
-    Serial.printf("[SENSOR] From: %s, Temp: %.1fC, Hum: %.1f%%\n", 
-                  sensor->name, sensor->temperature, sensor->humidity);
+    
+    // Convert floats to strings for safe printing
+    char tempStr[8];
+    char humStr[8];
+    dtostrf(sensor->temperature, 5, 1, tempStr);
+    dtostrf(sensor->humidity, 5, 1, humStr);
+    
+    Serial.printf("[SENSOR] From: %s, Temp: %s C, Hum: %s %%\n", 
+                  sensor->name, tempStr, humStr);
     
     if (strcmp(sensor->name, "2C") == 0) {
       temp2C = sensor->temperature;
@@ -87,7 +101,6 @@ void handleClient(WiFiClient client) {
     bool state = request.indexOf("state=1") >= 0;
     sendToggle(tgt, state);
     
-    // Simple response for the toggle request
     client.println("HTTP/1.1 200 OK");
     client.println("Content-Type: text/plain");
     client.println("Connection: close\r\n");
@@ -110,13 +123,13 @@ void handleClient(WiFiClient client) {
     return;
   }
 
-  // Serve the HTML file from SPIFFS
+  // Serve HTML fallback if file missing
   File file = SPIFFS.open("/index.html", "r");
   if (!file) {
-    client.println("HTTP/1.1 500 Internal Server Error");
-    client.println("Content-Type: text/plain");
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
     client.println("Connection: close\r\n");
-    client.println("500 - File not found");
+    client.println("<html><body><h1>ESP Controller Running</h1><p>SPIFFS not mounted</p></body></html>");
     return; 
   }
 
@@ -137,9 +150,9 @@ void setup() {
   // Initialize SPIFFS
   if (!SPIFFS.begin()) {
     Serial.println("[SPIFFS] Failed to mount file system");
-    return;
+  } else {
+    Serial.println("[SPIFFS] File system mounted");
   }
-  Serial.println("[SPIFFS] File system mounted");
 
   // Get controller's MAC address
   uint8_t controllerMac[6];
@@ -153,12 +166,15 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    if (millis() - wifiStart > 10000) {
-      Serial.println("\n[WiFi] Failed to connect!");
-      return;
+    if (millis() - wifiStart > 30000) {
+      Serial.println("\n[WiFi] Failed to connect - using ESP-NOW only");
+      break;
     }
   }
-  Serial.printf("\n[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.printf("\n[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+  }
 
   // Print MAC addresses
   printMac("[MAC] Controller", controllerMac);
@@ -167,8 +183,9 @@ void setup() {
 
   // Initialize ESP-NOW
   if (esp_now_init() != 0) {
-    Serial.println("[ESP-NOW] Init failed!");
-    return;
+    Serial.println("[ESP-NOW] Init failed! Restarting...");
+    ESP.restart();
+    delay(1000);
   }
 
   esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER);
@@ -194,10 +211,15 @@ void setup() {
 void loop() {
   static unsigned long lastStatus = 0;
   
-  // Periodic status updates
+  // Periodic status updates with dtostrf conversions
   if (millis() - lastStatus > 5000) {
-    Serial.printf("[STATUS] A4: %lums ago | 2C: %lums ago | Temp: %.1fC | Hum: %.1f%%\n", 
-                 millis() - lastA4Ack, millis() - last2CAck, temp2C, hum2C);
+    char tempStr[8];
+    char humStr[8];
+    dtostrf(temp2C, 5, 1, tempStr);
+    dtostrf(hum2C, 5, 1, humStr);
+    
+    Serial.printf("[STATUS] A4: %lums ago | 2C: %lums ago | Temp: %s C | Hum: %s %%\n", 
+                 millis() - lastA4Ack, millis() - last2CAck, tempStr, humStr);
     lastStatus = millis();
   }
   
