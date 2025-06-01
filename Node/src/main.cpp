@@ -70,6 +70,7 @@ void onReceive(uint8_t *mac, uint8_t *data, uint8_t len) {
 }
 
 void setup() {
+  Serial.begin(9600);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
   
@@ -94,6 +95,9 @@ void setup() {
 }
 
 void loop() {
+  Serial.println(dht.readHumidity());
+  Serial.println(dht.readTemperature());
+
   if (millis() - lastAck >= ackInterval) {
     sendAck();
     lastAck = millis();
