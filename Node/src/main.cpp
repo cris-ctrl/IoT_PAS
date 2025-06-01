@@ -26,7 +26,6 @@ struct AckPacket {
 
 
 void setup() {
-  Serial.begin(9800);
   dht.begin();
   WiFi.mode(WIFI_STA);  // ESP-NOW works only in STA or AP mode
   esp_now_init(); // do i really need to explain this to you? dumbass
