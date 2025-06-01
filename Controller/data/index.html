@@ -182,6 +182,33 @@
       transform: translateX(22px);
     }
     
+    .sensor-data {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    
+    .sensor-item {
+      text-align: center;
+      flex: 1;
+      padding: 10px;
+      background-color: #3a4a5d;
+      border-radius: 8px;
+      margin: 0 5px;
+    }
+    
+    .sensor-value {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 5px 0;
+      color: #6aa6ff;
+    }
+    
+    .sensor-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+    }
+    
     .connection-info {
       background-color: #2a3a4d;
       border-radius: 12px;
@@ -279,6 +306,11 @@
       .toggle-label {
         font-size: 1rem;
       }
+      
+      .sensor-data {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
   </style>
 </head>
@@ -290,18 +322,29 @@
     </header>
     
     <div class="dashboard">
-      <!-- Device 2C -->
+      <!-- Device 2C with Sensor -->
       <div class="device-card">
         <div class="device-header">
           <div class="device-icon">
             <i class="fas fa-microchip"></i>
           </div>
-          <div class="device-name">LED 2C</div>
+          <div class="device-name">LED 2C (Sensor)</div>
         </div>
         
         <div class="device-status">
           <div class="status-indicator" id="indicator2C"></div>
           <div class="status-text" id="status2C">Online</div>
+        </div>
+        
+        <div class="sensor-data">
+          <div class="sensor-item">
+            <div class="sensor-value" id="temperature">--.-</div>
+            <div class="sensor-label">Temperature (°C)</div>
+          </div>
+          <div class="sensor-item">
+            <div class="sensor-value" id="humidity">--.-</div>
+            <div class="sensor-label">Humidity (%)</div>
+          </div>
         </div>
         
         <div class="controls">
@@ -357,7 +400,7 @@
     </div>
     
     <footer>
-      <p>ESP Controller Dashboard v1.2</p>
+      <p>ESP Controller Dashboard v1.3</p>
     </footer>
   </div>
 
@@ -379,6 +422,10 @@
         stale: false
       }
     };
+    
+    // Sensor elements
+    const tempElement = document.getElementById('temperature');
+    const humElement = document.getElementById('humidity');
     
     // Connection status
     let connectionStatus = {
@@ -410,9 +457,25 @@
         });
     }
     
+    function updateSensorData() {
+      fetch('/sensor')
+        .then(response => {
+          if (!response.ok) throw new Error('Sensor data error');
+          return response.json();
+        })
+        .then(data => {
+          tempElement.textContent = data.temp.toFixed(1);
+          humElement.textContent = data.hum.toFixed(1);
+        })
+        .catch(error => {
+          console.error('Sensor data fetch failed:', error);
+          tempElement.textContent = '--.-';
+          humElement.textContent = '--.-';
+        });
+    }
+    
     function updateDevice(deviceId, timeDiff) {
       const device = devices[deviceId];
-      const seconds = Math.floor(timeDiff / 1000);
       
       // Update status based on time difference
       if (timeDiff < 5000) { // Less than 5 seconds
@@ -504,6 +567,10 @@
       
       // Start status checks
       checkStatus();
+      
+      // Start sensor data updates
+      setInterval(updateSensorData, 3000);
+      updateSensorData(); // Initial update
     });
   </script>
   
