@@ -6,7 +6,7 @@
 #include <espnow.h>
 
 // Configuration
-#define DHTPIN 2     // GPIO2 on ESP-01 (physical pin 5)
+#define DHTPIN 0     // GPIO 0
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 //###########
