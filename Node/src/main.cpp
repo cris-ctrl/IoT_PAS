@@ -1,5 +1,7 @@
 #include <DHT.h>
 #include <Arduino.h>
+#include <stdio.h>
+#include <string.h>
 #include <ESP8266WiFi.h>
 #include <espnow.h>
 
@@ -9,7 +11,7 @@
 DHT dht(DHTPIN, DHTTYPE);
 //###########
 uint8_t mac09[] = {0x2C, 0xF4, 0x32, 0x8C, 0x09, 0xBF}; // mac of the controller
-
+char Myname[4] = "e02";
 
 //packet structures
 struct SensorPacket {
@@ -43,6 +45,7 @@ void loop() {
   
   //look how cute :3 were wrapping our data into a neat lil packet (please help im going insane)
   SensorPacket Data;
+  strcpy(Data.name, Myname);
   Data.temperature = tempC;
   Data.humidity = humidity;
 
