@@ -20,11 +20,6 @@ struct SensorPacket {
   float humidity;
 };
 
-struct AckPacket {
-  char name[4];
-};
-
-
 
 
 void setup() {
