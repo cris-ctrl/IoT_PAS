@@ -2,7 +2,6 @@
 <html>
 <head>
   <meta charset='utf-8'>
-  <meta http-equiv='refresh' content='7'>
   <title>Painel de Sensores</title>
   <style>
     body { 
@@ -32,6 +31,11 @@
       font-size: 14px;
       color: #666;
     }
+    #status {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+    }
   </style>
 </head>
 <body>
@@ -53,24 +57,96 @@
   </div>
   
   <p class="info">Pressione BARRA DE ESPAÇO para ouvir os valores</p>
+  <p id="status">Atualizando a cada 7 segundos...</p>
 
   <script>
+    // Variáveis para controlar o refresh
+    let refreshInterval = 7000; // 7 segundos
+    let refreshTimer = null;
+    let isSpeaking = false;
+
+    // Função para buscar dados atualizados
+    function fetchData() {
+      fetch(window.location.href)
+        .then(response => response.text())
+        .then(html => {
+          // Extrai apenas os valores atualizados
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          
+          document.getElementById('device').textContent = 
+            doc.getElementById('device').textContent;
+          
+          document.getElementById('humidity').textContent = 
+            doc.getElementById('humidity').textContent;
+          
+          document.getElementById('temperature').textContent = 
+            doc.getElementById('temperature').textContent;
+            
+          document.getElementById('status').textContent = 
+            'Última atualização: ' + new Date().toLocaleTimeString();
+        })
+        .catch(error => {
+          console.error('Erro ao atualizar:', error);
+          document.getElementById('status').textContent = 
+            'Erro na atualização: ' + new Date().toLocaleTimeString();
+        });
+    }
+
+    // Função para ler os valores
+    function readValues() {
+      const humidity = document.getElementById('humidity').textContent;
+      const temperature = document.getElementById('temperature').textContent;
+      
+      const text = `Humidade a ${humidity.replace('%', '')} por cento, e temperatura a ${temperature.replace('°C', '')} graus Celsius`;
+      
+      if ('speechSynthesis' in window) {
+        // Cancela qualquer fala em andamento
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        
+        // Atualiza o status durante a fala
+        isSpeaking = true;
+        document.getElementById('status').textContent = 'Lendo valores...';
+        
+        utterance.onend = function() {
+          isSpeaking = false;
+          document.getElementById('status').textContent = 
+            'Última atualização: ' + new Date().toLocaleTimeString();
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Inicializa o refresh automático
+    function startAutoRefresh() {
+      refreshTimer = setInterval(() => {
+        if (!isSpeaking) {
+          fetchData();
+        }
+      }, refreshInterval);
+    }
+
+    // Configura os eventos
     document.addEventListener('keydown', function(event) {
       if (event.code === 'Space') {
         event.preventDefault();
-        
-        const humidity = document.getElementById('humidity').textContent;
-        const temperature = document.getElementById('temperature').textContent;
-        
-        const text = `Humidade a ${humidity.replace('%', '')} por cento, e temperatura a ${temperature.replace('°C', '')} graus Celsius`;
-        
-        if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.lang = 'pt-BR';
-          window.speechSynthesis.speak(utterance);
-        }
+        readValues();
       }
     });
+
+    // Inicia o sistema
+    window.onload = function() {
+      // Marca a primeira atualização
+      document.getElementById('status').textContent = 
+        'Última atualização: ' + new Date().toLocaleTimeString();
+      
+      // Inicia o refresh automático
+      startAutoRefresh();
+    };
   </script>
 </body>
 </html>
