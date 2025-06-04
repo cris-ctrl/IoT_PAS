@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta charset='utf-8'>
-  <meta http-equiv='refresh' content='2'>
-  <title>ESP-SAP Dashboard</title>
+  <meta http-equiv='refresh' content='7'>
+  <title>Painel de Sensores</title>
   <style>
     body { 
       font-family: Arial, sans-serif; 
@@ -18,30 +18,59 @@
       max-width: 300px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    h1 { color: #2c3e50; }
+    h1 { 
+      color: #2c3e50; 
+      margin-bottom: 20px;
+    }
     .value {
       font-size: 24px;
       font-weight: bold;
       color: #3498db;
     }
+    .info {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <h1>Sensor Dashboard</h1>
+  <h1>Painel de Sensores</h1>
   
   <div class="card">
     <h2>Sensor: </h2>
-    <p class="value">{DEVICE}</p>
+    <p class="value" id="device">{DEVICE}</p>
   </div>
   
   <div class="card">
     <h2>Humidade: </h2>
-    <p class="value">{HUMIDITY}%</p>
+    <p class="value" id="humidity">{HUMIDITY}%</p>
   </div>
   
   <div class="card">
     <h2>Temperatura: </h2>
-    <p class="value">{TEMP}°C</p>
+    <p class="value" id="temperature">{TEMP}°C</p>
   </div>
+  
+  <p class="info">Pressione BARRA DE ESPAÇO para ouvir os valores</p>
+
+  <script>
+    document.addEventListener('keydown', function(event) {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        
+        const humidity = document.getElementById('humidity').textContent;
+        const temperature = document.getElementById('temperature').textContent;
+        
+        const text = `Humidade a ${humidity.replace('%', '')} por cento, e temperatura a ${temperature.replace('°C', '')} graus Celsius`;
+        
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'pt-BR';
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    });
+  </script>
 </body>
 </html>
