@@ -25,9 +25,9 @@ struct SensorPacket {
 void setup() {
   dht.begin();
   WiFi.mode(WIFI_STA);  // ESP-NOW works only in STA or AP mode
-  esp_now_init(); // do i really need to explain this to you? dumbass
+  esp_now_init(); // initializes esp-now
 
-  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER); //controller only sends, slave only recieves, combo cant decide if hes a top or bottom (its both)
+  esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER); //controller only sends, slave only recieves, combo is both
   esp_now_add_peer(mac09, ESP_NOW_ROLE_SLAVE, 1, NULL, 0); // adds esp09 as a slave peer, sending on channel 1 of 13, without encription
 
 }
@@ -38,7 +38,7 @@ void loop() {
   float humidity = dht.readHumidity();
   float tempC = dht.readTemperature();  // Celsius
   
-  //look how cute :3 were wrapping our data into a neat lil packet (please help im going insane)
+  //wrapping data into a packet
   SensorPacket Data;
   strcpy(Data.name, Myname);
   Data.temperature = tempC;
